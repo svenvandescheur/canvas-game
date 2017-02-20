@@ -3,27 +3,40 @@ import { CANVAS, CTX } from './canvas';
 
 
 /**
- * Represents a sprite (a game image).
- * @class
+ *  Base class for sprites and bakcground.
+ * @abstract
  */
-export class GameSprite {
+class AbstractGameImage {
+    /**
+     * Constructor method.
+     * @param {Array} array of canvas image resources.
+     */
     constructor(images) {
         this.images = images;
         this.imageIndex = 0;
-        this.updateTime = null;
-        this.updateImage();
+        this.skipFrames = 3;
+        this.skippedFrames = 0;
+        this.updateImage(true);
     }
 
+    /**
+     * Update the state of this sprite.
+     * Gets fired by MainLoop.
+     */
     update() {
         this.updateImage();
     }
 
-    updateImage() {
+    /**
+     * Loads the next image if time since last update > this.imageSpeed.
+     * @param {boolean} [force=false]
+     */
+    updateImage(force=false) {
         let date = new Date();
         let time = date.getTime();
 
-        if (!time || time - this.updateTime > 50) {
-            this.updateTime = time;
+        if (this.skippedFrames >= this.skipFrames || force) {
+            this.skippedFrames = 0;
 
             this.imageIndex = (this.imageIndex + 1 >= this.images.length) ? 0 : this.imageIndex + 1;
             this.image = this.images[this.imageIndex];
@@ -36,9 +49,17 @@ export class GameSprite {
             }
 
             img.src = this.images[this.imageIndex].src;
+        } else {
+            this.skippedFrames++;
         }
     }
 }
+
+/**
+ * Represents a sprite (a game image).
+ * @class
+ */
+export class GameSprite extends AbstractGameImage {}
 
 
 /**
@@ -46,12 +67,23 @@ export class GameSprite {
  * @abstract
  */
 export class GameObject {
+    /**
+     * Constructor method.
+     * @param {GameRoom} gameRoom
+     * @param {GameSprite} sprite
+     */
     constructor(gameRoom, sprite) {
         this.sprite = sprite;
         this.x = 0;
         this.y = 0;
+        this.speedH = 0;
+        this.speedV = 0;
     }
 
+    /**
+     * Draws the sprite of this object on CTX.
+     * Gets fired by MainLoop.
+     */
     draw() {
         CTX.drawImage(this.sprite.image,
             this.x,
@@ -60,20 +92,42 @@ export class GameObject {
             this.sprite.height)
     }
 
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
     update() {
         this.sprite.update();
+        
+        if (this.speedH) {
+            this.x += this.speedH;
+        };
+
+        if (this.speedV) {
+            this.y += this.speedV;
+        };
     };
 
+    /**
+     * Returns whether this object's bounding box is present at x, y coordinates.
+     * @param {number} x
+     * @param {number} y
+     * @returns {boolean}
+     */
     isAtPosition(x, y) {
         let isAtX = (x >= this.x && x <= this.x + this.sprite.width);
         let isAtY = (y >= this.y && y <= this.y + this.sprite.height);
         return isAtX && isAtY;
     }
 
-    isInsideGameRoom() {
-        let isInsideX = (this.x + this.sprite.width >= 0 && this.x <= CANVAS.width);
-        let isInsideY = (this.y <=CANVAS.height && this.y + this.sprite.height >= 0);
-        return isInsideX && isInsideY;
+    /**
+     * Returns whether this object is outside the room/canvas. 
+     * @returns {boolean}
+     */
+    isOutsideRoom() {
+        let isOutsideX = (this.x + this.sprite.width < 0 || this.x > CANVAS.width);
+        let isOutsideY = (this.y > CANVAS.height || this.y + this.sprite.height < 0);
+        return isOutsideX || isOutsideY;
     }
 }
 
@@ -83,20 +137,33 @@ export class GameObject {
  * @abstract
  */
 export class GravitatingGameObject extends GameObject {
+    /**
+     * Constructor method.
+     * @param {GameRoom} gameRoom
+     * @param {GameSprite} sprite
+     */
     constructor(gameRoom, sprite) {
         super(gameRoom, sprite);
         this.gameRoom = gameRoom;
         this.gravitySpeed = 1;
     }
 
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
     update() {
         super.update();
         this.gravitate();
+        this.y += this.gravitySpeed;
     }
 
+    /**
+     * Controls gravitation parameters.
+     * Calls this.land() if not falling/bouncing.
+     */
     gravitate() {
         if (this.isAirborne()) {
-            this.y += this.gravitySpeed;
             this.gravitySpeed++;
         } else {
             if (Math.abs(this.gravitySpeed) < 3) {
@@ -107,6 +174,9 @@ export class GravitatingGameObject extends GameObject {
         }
     }
 
+    /**
+     * Stops gravitating, snaps to the floor.
+     */
     land() {
         let object = this.gameRoom.findNearestGameObjectBelowPoint(this.x, this.y, this);
         
@@ -117,6 +187,10 @@ export class GravitatingGameObject extends GameObject {
         this.gravitySpeed = 0;
     }
 
+    /**
+     * Returns wheter this object is in airbone (no contact with an object below).
+     * @param {boolean}
+     */
     isAirborne() {
         let objects = this.gameRoom.objects.filter((object) => object !== this);
         return !objects.find((object) => object.isAtPosition(this.x, this.y + this.sprite.height + this.gravitySpeed))

@@ -1,11 +1,9 @@
 import BEM from 'bem.js';
 import { GameSprite, GameRoom } from './gameclasses';
-import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PlatformBlock, PlatformBlockTop } from './platform';
+import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformBlock, PlatformBlockTop } from './platform';
 import { Player } from './player';
 import { CANVAS, CTX } from './canvas';
 
-/** {number} Amount of platform blocks to render ahead. */
-const VIEWPORT_BUFFER = 1;
 
 /** {HTMLImageElement} representing the blue background. */
 const ASSET_BACKGROUND_BLUE = BEM.getBEMNode('background', false, 'blue');
@@ -46,11 +44,11 @@ export class Level extends GameRoom {
 
     update() {
         this.objects.forEach((object) => object.update());
-        let nonPlayerObjects = this.objects.filter((object) => object.constructor.name !== Player.name);
-        nonPlayerObjects.forEach((object) => object.x -= this.speed);
+        // let nonPlayerObjects = this.objects.filter((object) => object.constructor.name !== Player.name);
+        // nonPlayerObjects.forEach((object) => object.x -= this.speed);
         
-        let outsideGameRoomObjects = nonPlayerObjects.filter((object) => !object.isInsideGameRoom() && object.x <= 0);
-        outsideGameRoomObjects.forEach((object) => object.x += CANVAS.width + VIEWPORT_BUFFER * object.sprite.width);
+        // let outsideGameRoomObjects = nonPlayerObjects.filter((object) => !object.isInsideGameRoom() && object.x <= 0);
+        // outsideGameRoomObjects.forEach((object) => object.x += CANVAS.width + VIEWPORT_BUFFER * object.sprite.width);
     }
 
     drawSky() {
@@ -68,8 +66,8 @@ export class Level extends GameRoom {
         let h = SPRITE_PLATFORM.height;
         let y = CANVAS.clientHeight - h;
         let y2 = y - SPRITE_PLATFORM_TOP.height;
-        this.createPlatform(PlatformBlock, 0, y, CANVAS.width / SPRITE_PLATFORM.width + VIEWPORT_BUFFER);
-        this.createPlatform(PlatformBlockTop, 0, y2, CANVAS.width / SPRITE_PLATFORM_TOP.width + VIEWPORT_BUFFER);
+        this.createPlatform(PlatformBlock, 0, y, CANVAS.width / SPRITE_PLATFORM.width + PLATORM_BUFFER);
+        this.createPlatform(PlatformBlockTop, 0, y2, CANVAS.width / SPRITE_PLATFORM_TOP.width + PLATORM_BUFFER);
     }
 
     createPlatform(gameObjectClass, x, y, n) {

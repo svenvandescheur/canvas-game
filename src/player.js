@@ -71,6 +71,6 @@ export class Player extends GravitatingGameObject {
 
     update() {
         super.update();
-        this.x +=  (this.moveX - this.x) / 25;
+        this.speedH = (this.moveX - this.x) / 25;
     }
 }
