@@ -81,7 +81,7 @@ export class Level extends GameRoom {
 
     createPlayer() {
         let player = new Player(this);
-        player.x = 10;
+        player.x = 70;
         player.y = 10;
 
         this.objects.push(player);

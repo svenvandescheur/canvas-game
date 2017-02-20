@@ -145,6 +145,7 @@ export class GravitatingGameObject extends GameObject {
     constructor(gameRoom, sprite) {
         super(gameRoom, sprite);
         this.gameRoom = gameRoom;
+        this.frictionSpeed = 0;
         this.gravitySpeed = 1;
     }
 
@@ -154,15 +155,28 @@ export class GravitatingGameObject extends GameObject {
      */
     update() {
         super.update();
-        this.gravitate();
+        this.applyGravity();
+        this.applyFriction();
         this.y += this.gravitySpeed;
+        this.x += this.frictionSpeed;
+    }
+
+    applyFriction() {
+        if (!this.isAirborne()) {
+            let floor = this.gameRoom.findNearestGameObjectBelowPoint(this.x, this.y, this);
+            if (floor) {
+                this.frictionSpeed = floor.speedH;
+            }
+        } else {
+            this.frictionSpeed = 0;
+        }
     }
 
     /**
      * Controls gravitation parameters.
      * Calls this.land() if not falling/bouncing.
      */
-    gravitate() {
+    applyGravity() {
         if (this.isAirborne()) {
             this.gravitySpeed++;
         } else {
