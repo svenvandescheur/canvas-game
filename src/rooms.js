@@ -1,5 +1,5 @@
 import BEM from 'bem.js';
-import { GameSprite, GameRoom } from './gameclasses';
+import { GameSprite, GameBackground, GameRoom } from './gameclasses';
 import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformBlock, PlatformBlockTop } from './platform';
 import { Player } from './player';
 import { CANVAS, CTX } from './canvas';
@@ -15,13 +15,13 @@ const ASSET_BACKGROUND_GREEN = BEM.getBEMNode('background', false, 'green');
 const ASSET_BACKGROUND_GRAY = BEM.getBEMNode('background', false, 'gray');
 
 /** {GameSprite} representing the blue background. */
-const SPRITE_BACKGROUND_BLUE = new GameSprite([ASSET_BACKGROUND_BLUE]);
+const BACKGROUND_BLUE = new GameBackground([ASSET_BACKGROUND_BLUE]);
 
 /** {GameSprite} representing the green background. */
-const SPRITE_BACKGROUND_GREEN = new GameSprite([ASSET_BACKGROUND_GREEN]);
+const BACKGROUND_GREEN = new GameBackground([ASSET_BACKGROUND_GREEN]);
 
 /** {GameSprite} representing the gray background. */
-const SPRITE_BACKGROUND_GRAY = new GameSprite([ASSET_BACKGROUND_GRAY]);
+const BACKGROUND_GRAY = new GameBackground([ASSET_BACKGROUND_GRAY]);
 
 
 /**
@@ -31,7 +31,9 @@ const SPRITE_BACKGROUND_GRAY = new GameSprite([ASSET_BACKGROUND_GRAY]);
 export class Level extends GameRoom {
     constructor() {
         super();
-        this.speed = 5;
+        this.speedH = -5;
+        this.background = BACKGROUND_BLUE;
+        this.background.speedH = this.speedH / 4;
         
         this.createFloor();
         this.createPlayer();
@@ -44,22 +46,12 @@ export class Level extends GameRoom {
 
     update() {
         this.objects.forEach((object) => object.update());
-        // let nonPlayerObjects = this.objects.filter((object) => object.constructor.name !== Player.name);
-        // nonPlayerObjects.forEach((object) => object.x -= this.speed);
-        
-        // let outsideGameRoomObjects = nonPlayerObjects.filter((object) => !object.isInsideGameRoom() && object.x <= 0);
-        // outsideGameRoomObjects.forEach((object) => object.x += CANVAS.width + VIEWPORT_BUFFER * object.sprite.width);
+        this.background.update();
     }
 
     drawSky() {
-        let grd = CTX.createLinearGradient(0, 0, 0, 100);
-        grd.addColorStop(0, '#3a7bd5');
-        grd.addColorStop(1, '#00d2ff');
-
-        CTX.fillStyle = grd;
-        CTX.fillRect(0, 0, CANVAS.clientWidth, CANVAS.clientHeight);
-
-        CTX.drawImage(SPRITE_BACKGROUND_BLUE.image, 0, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+        CTX.drawImage(this.background.image, this.background.x, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+        CTX.drawImage(this.background.image, this.background.x + CANVAS.clientWidth, 0, CANVAS.clientWidth, CANVAS.clientHeight);
     }
 
     createFloor() {
@@ -75,6 +67,7 @@ export class Level extends GameRoom {
             let gameObject = new gameObjectClass(this);
             gameObject.x = i * gameObject.sprite.width + x;
             gameObject.y = y;
+            gameObject.speedH = this.speedH;
             this.objects.push(gameObject);
         }
     }

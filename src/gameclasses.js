@@ -12,6 +12,7 @@ class AbstractGameImage {
      * @param {Array} array of canvas image resources.
      */
     constructor(images) {
+        this.image = null;
         this.images = images;
         this.imageIndex = 0;
         this.skipFrames = 3;
@@ -60,6 +61,44 @@ class AbstractGameImage {
  * @class
  */
 export class GameSprite extends AbstractGameImage {}
+
+
+/**
+ * Represents a sprite (a game image).
+ * @class
+ */
+export class GameBackground extends AbstractGameImage {
+    /**
+     * Constructor method.
+     * @param {Array} array of canvas image resources.
+     */
+    constructor(images) {
+        super(images);
+        this.x = 0;
+        this.speedH = 0;
+    }
+
+    /**
+     * Update the state of this sprite.
+     * Gets fired by MainLoop.
+     */
+    update() {
+        super.update();
+        this.x += this.speedH;
+
+        if(this.isOutsideRoomLeft()) {
+            this.x += CANVAS.clientWidth;
+        }
+    }
+
+    /**
+     * Returns whether this object is outside the room/canvas. 
+     * @returns {boolean}
+     */
+    isOutsideRoomLeft() {
+        return this.x + CANVAS.clientWidth < 0;
+    }
+}
 
 
 /**

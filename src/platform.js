@@ -30,7 +30,7 @@ class AbstractPlatformObject extends GameObject {
      */
     constructor(gameRoom, gameSprite) {
         super(gameRoom, gameSprite)
-        this.speedH = -5;
+        this.speedH = 0;
     }
 
     update() {
