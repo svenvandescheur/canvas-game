@@ -60,7 +60,19 @@ class AbstractGameImage {
  * Represents a sprite (a game image).
  * @class
  */
-export class GameSprite extends AbstractGameImage {}
+export class GameSprite extends AbstractGameImage {
+    /**
+     * Constructor method.
+     * @param {Array} array of canvas image resources.
+     */
+    constructor(images) {
+        super(images);
+        setTimeout(() => {
+            this.originX = this.width / 2;
+            this.originY = this.height / 2;
+        })
+    }
+}
 
 
 /**
@@ -125,8 +137,8 @@ export class GameObject {
      */
     draw() {
         CTX.drawImage(this.sprite.image,
-            this.x,
-            this.y,
+            this.x - this.sprite.originX,
+            this.y - this.sprite.originY,
             this.sprite.width,
             this.sprite.height)
     }
@@ -154,8 +166,8 @@ export class GameObject {
      * @returns {boolean}
      */
     isAtPosition(x, y) {
-        let isAtX = (x >= this.x && x <= this.x + this.sprite.width);
-        let isAtY = (y >= this.y && y <= this.y + this.sprite.height);
+        let isAtX = (x >= this.x - this.sprite.originX && x <= this.x - this.sprite.originX + this.sprite.width);
+        let isAtY = (y >= this.y - this.sprite.originY && y <= this.y - this.sprite.originY + this.sprite.height);
         return isAtX && isAtY;
     }
 
@@ -164,8 +176,8 @@ export class GameObject {
      * @returns {boolean}
      */
     isOutsideRoom() {
-        let isOutsideX = (this.x + this.sprite.width < 0 || this.x > CANVAS.width);
-        let isOutsideY = (this.y > CANVAS.height || this.y + this.sprite.height < 0);
+        let isOutsideX = (this.x - this.sprite.originX + this.sprite.width < 0 || this.x - this.sprite.originX > CANVAS.width);
+        let isOutsideY = (this.y - this.sprite.originY > CANVAS.height || this.y - this.sprite.originY + this.sprite.height < 0);
         return isOutsideX || isOutsideY;
     }
 }
@@ -234,7 +246,8 @@ export class GravitatingGameObject extends GameObject {
         let object = this.gameRoom.findNearestGameObjectBelowPoint(this.x, this.y, this);
         
         if (object) {
-            this.y = object.y - this.sprite.height;
+            let objectTop = object.y - object.sprite.originY;
+            this.y = objectTop - this.sprite.originY
         }
 
         this.gravitySpeed = 0;
@@ -246,7 +259,7 @@ export class GravitatingGameObject extends GameObject {
      */
     isAirborne() {
         let objects = this.gameRoom.objects.filter((object) => object !== this);
-        return !objects.find((object) => object.isAtPosition(this.x, this.y + this.sprite.height + this.gravitySpeed))
+        return !objects.find((object) => object.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed))
     }
 }
 

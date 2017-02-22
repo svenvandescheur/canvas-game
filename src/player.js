@@ -71,18 +71,21 @@ export class Player extends GravitatingGameObject {
 
     update() {
         super.update();
+        this.sprite.skipFrames = 7 - Math.abs(this.speedH);
 
         if (!this.isAirborne()) {
-            this.speedH = -this.frictionSpeed + (this.moveX - this.x) / 30;
+            let distance = this.moveX - this.x
+            let distanceSpeed = distance / 30;
+            this.speedH = -this.frictionSpeed + distanceSpeed;
         }
 
-        if (this.x <= 0) {
+        if (this.x - this.sprite.originX <= 0) {
             this.speedH = Math.max(this.speedH, 0);
             this.frictionSpeed = 0;
-            this.x = 0;
+            this.x = this.sprite.originX;
         }
 
-        if (this.x + this.sprite.width >= CANVAS.clientWidth) {
+        if (this.x - this.sprite.originX + this.sprite.width >= CANVAS.clientWidth) {
             this.speedH = Math.min(this.speedH, 0);
         }
     }

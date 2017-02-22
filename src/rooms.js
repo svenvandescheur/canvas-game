@@ -56,7 +56,7 @@ export class Level extends GameRoom {
 
     createFloor() {
         let h = SPRITE_PLATFORM.height;
-        let y = CANVAS.clientHeight - h;
+        let y = CANVAS.clientHeight - SPRITE_PLATFORM.originY;
         let y2 = y - SPRITE_PLATFORM_TOP.height;
         this.createPlatform(PlatformBlock, 0, y, CANVAS.width / SPRITE_PLATFORM.width + PLATORM_BUFFER);
         this.createPlatform(PlatformBlockTop, 0, y2, CANVAS.width / SPRITE_PLATFORM_TOP.width + PLATORM_BUFFER);
