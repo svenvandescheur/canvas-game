@@ -1,6 +1,6 @@
 import BEM from 'bem.js';
 import { CANVAS, CTX } from './canvas';
-import { FallingBLock } from './enemies';
+import { FallingBLock, EnemyEasy } from './enemies';
 import { GameSprite, GameBackground, GameRoom } from './gameclasses';
 import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformBlock, PlatformBlockTop } from './platform';
 import { Player } from './player';
@@ -37,7 +37,7 @@ export class Level extends GameRoom {
         this.background.speedH = this.speedH / 4;
         
         this.createFloor();
-        this.createPlayer();
+        this.createInitialObjects();
     }
 
     draw() {
@@ -73,19 +73,23 @@ export class Level extends GameRoom {
         }
     }
 
-    createPlayer() {
-        let player = new Player(this);
-        player.x = 70;
-        player.y = 10;
+    /**
+     * Creates the first batch of objects.
+     */
+    createInitialObjects() {
+        this.createObject(Player, 70, 10);
+        this.createObject(FallingBLock, CANVAS.clientWidth - 10, 10);
+        this.createObject(EnemyEasy, CANVAS.clientWidth / 2 - 10, 10);
+    }
 
-        this.objects.push(player);
-
-
-        let foo = new FallingBLock(this);
-        foo.x = CANVAS.clientWidth - 10;
-        foo.y = 10;
-
-        this.objects.push(foo);
+    /**
+     * Creates a new gameObject at x, y
+     */
+    createObject(gameObject, x, y) {
+        let object = new gameObject(this);
+        object.x = x;
+        object.y = y;
+        this.objects.push(object);
     }
 
     /**

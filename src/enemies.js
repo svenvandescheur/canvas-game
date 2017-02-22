@@ -1,5 +1,5 @@
 import BEM from 'bem.js';
-import { CANVAS } from './canvas';
+import { CANVAS, CTX } from './canvas';
 import { GameSprite, GravitatingGameObject } from './gameclasses';
 import { Player} from './player';
 
@@ -9,6 +9,12 @@ const ASSET_FALLING_BLOCK = BEM.getBEMNode('block', false, 'falling');
 
 /** {GameSprite} representing the the falling block. */
 const SPRITE_FALLING_BLOCK = new GameSprite([ASSET_FALLING_BLOCK]);
+
+/** {HTMLImageElement} representing the enemy. */
+const ASSET_ENEMY_EASY = BEM.getBEMNode('enemy', false, 'easy');
+
+/** {GameSprite} representing the the enemy. */
+const SPRITE_ENEMY_EASY = new GameSprite([ASSET_ENEMY_EASY]);
 
 
 /**
@@ -26,6 +32,10 @@ class Enemy extends GravitatingGameObject {
 
         if (playerAtBL || playerAtBR) {
             player.die();  // So sorry...
+        }    
+
+        if (this.isOutsideRoom()) {
+            // Delete?
         }
     }
 }
@@ -43,15 +53,20 @@ export class FallingBLock extends Enemy {
     constructor(gameRoom) {
         super(gameRoom, SPRITE_FALLING_BLOCK)
     }
-    
+}
+
+/**
+ * A simple falling block enemy.
+ * @class
+ */
+export class EnemyEasy extends Enemy {
     /**
-     * Update the state of this object.
-     * Gets fired by MainLoop.
+     * Constructor method.
+     * @param {GameRoom} gameRoom
+     * @param {GameSprite} gameSprite
      */
-    update() {
-        super.update();        
-        if (this.isOutsideRoom()) {
-            // Delete?
-        }
+    constructor(gameRoom) {
+        super(gameRoom, SPRITE_ENEMY_EASY)
+        this.speedH = Math.random() * 5;
     }
 }
