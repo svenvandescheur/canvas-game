@@ -89,4 +89,12 @@ export class Player extends GravitatingGameObject {
             this.speedH = Math.min(this.speedH, 0);
         }
     }
+
+    /**
+     * Trigger game over, player dies.
+     */
+    die() {
+        this.room.end();
+        this.sprite.animate = false;
+    }
 }

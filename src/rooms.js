@@ -1,8 +1,9 @@
 import BEM from 'bem.js';
+import { CANVAS, CTX } from './canvas';
+import { FallingBLock } from './enemies';
 import { GameSprite, GameBackground, GameRoom } from './gameclasses';
 import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformBlock, PlatformBlockTop } from './platform';
 import { Player } from './player';
-import { CANVAS, CTX } from './canvas';
 
 
 /** {HTMLImageElement} representing the blue background. */
@@ -78,5 +79,24 @@ export class Level extends GameRoom {
         player.y = 10;
 
         this.objects.push(player);
+
+
+        let foo = new FallingBLock(this);
+        foo.x = CANVAS.clientWidth - 10;
+        foo.y = 10;
+
+        this.objects.push(foo);
+    }
+
+    /**
+     * Stops the room.
+     * TODO: Score's, menu's 'n stuff...
+     */
+    end() {
+        this.background.speedH = 0;
+        this.objects.forEach((object) => {
+            object.speedH = 0;
+            object.speedV = 0;
+        });
     }
 }

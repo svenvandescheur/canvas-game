@@ -32,7 +32,10 @@ class AbstractPlatformObject extends GameObject {
         super(gameRoom, gameSprite)
         this.speedH = 0;
     }
-
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
     update() {
         super.update();        
         if (this.isOutsideRoom()) {

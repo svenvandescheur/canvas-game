@@ -12,6 +12,7 @@ class AbstractGameImage {
      * @param {Array} array of canvas image resources.
      */
     constructor(images) {
+        this.animate = true;
         this.image = null;
         this.images = images;
         this.imageIndex = 0;
@@ -36,7 +37,7 @@ class AbstractGameImage {
         let date = new Date();
         let time = date.getTime();
 
-        if (this.skippedFrames >= this.skipFrames || force) {
+        if ((this.animate && this.skippedFrames >= this.skipFrames) || force) {
             this.skippedFrames = 0;
 
             this.imageIndex = (this.imageIndex + 1 >= this.images.length) ? 0 : this.imageIndex + 1;
@@ -124,6 +125,7 @@ export class GameObject {
      * @param {GameSprite} sprite
      */
     constructor(gameRoom, sprite) {
+        this.room = gameRoom;
         this.sprite = sprite;
         this.x = 0;
         this.y = 0;
@@ -195,7 +197,6 @@ export class GravitatingGameObject extends GameObject {
      */
     constructor(gameRoom, sprite) {
         super(gameRoom, sprite);
-        this.gameRoom = gameRoom;
         this.frictionSpeed = 0;
         this.gravitySpeed = 1;
     }
@@ -214,7 +215,7 @@ export class GravitatingGameObject extends GameObject {
 
     applyFriction() {
         if (!this.isAirborne()) {
-            let floor = this.gameRoom.findNearestGameObjectBelowPoint(this.x, this.y, this);
+            let floor = this.room.findNearestGameObjectBelowPoint(this.x, this.y, this);
             if (floor) {
                 this.frictionSpeed = floor.speedH;
             }
@@ -243,7 +244,7 @@ export class GravitatingGameObject extends GameObject {
      * Stops gravitating, snaps to the floor.
      */
     land() {
-        let object = this.gameRoom.findNearestGameObjectBelowPoint(this.x, this.y, this);
+        let object = this.room.findNearestGameObjectBelowPoint(this.x, this.y, this);
         
         if (object) {
             let objectTop = object.y - object.sprite.originY;
@@ -258,7 +259,7 @@ export class GravitatingGameObject extends GameObject {
      * @param {boolean}
      */
     isAirborne() {
-        let objects = this.gameRoom.objects.filter((object) => object !== this);
+        let objects = this.room.objects.filter((object) => object !== this);
         return !objects.find((object) => object.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed))
     }
 }
@@ -291,4 +292,6 @@ export class GameRoom {
             }
         }
     }
+
+    end() {}
 }
