@@ -111,6 +111,11 @@ export class GameBackground extends AbstractGameImage {
     isOutsideRoomLeft() {
         return this.x + CANVAS.clientWidth < 0;
     }
+
+    draw() {
+        CTX.drawImage(this.image, this.x, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+        CTX.drawImage(this.image, this.x + CANVAS.clientWidth, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+    }
 }
 
 
@@ -131,6 +136,7 @@ export class GameObject {
         this.y = 0;
         this.speedH = 0;
         this.speedV = 0;
+        this.weight = 10;
     }
 
     /**
@@ -215,7 +221,7 @@ export class GravitatingGameObject extends GameObject {
 
     applyFriction() {
         if (!this.isAirborne()) {
-            let floor = this.room.findNearestGameObjectBelowPoint(this.x, this.y, this);
+            let floor = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height, this);
             if (floor) {
                 this.frictionSpeed = floor.speedH;
             }
@@ -230,9 +236,10 @@ export class GravitatingGameObject extends GameObject {
      */
     applyGravity() {
         if (this.isAirborne()) {
+            this.speedH = 0;
             this.gravitySpeed++;
         } else {
-            if (Math.abs(this.gravitySpeed) < 3) {
+            if (this.gravitySpeed && Math.abs(this.gravitySpeed) < 3) {
                 this.land();            
             } else {
                 this.gravitySpeed = this.gravitySpeed * -0.25;
@@ -284,7 +291,7 @@ export class GameRoom {
     findNearestGameObjectBelowPoint(x, y, notMe) {
         let objects = this.objects.filter((object) => object !== notMe);
 
-        for (y=y; y<=CANVAS.height; y++) {
+        for (y=y+1; y<=CANVAS.height; y++) {
             let object = objects.find(object => object.isAtPosition(x, y));
             
             if (object) {

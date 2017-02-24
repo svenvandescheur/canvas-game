@@ -43,7 +43,6 @@ export class Player extends GravitatingGameObject {
         // Jump
         let date = new Date();
         this.jumpStartTime = date.getTime();
-        setTimeout(this.touchEnd.bind(this, e), 100);
     }
 
     tochMove(e) {
@@ -62,8 +61,12 @@ export class Player extends GravitatingGameObject {
         let time = date.getTime();
 
         if (!this.isAirborne() && this.jumpStartTime) {
-            let velocity = Math.min((time - this.jumpStartTime) / 5, 20);
-            this.gravitySpeed = -velocity;
+            let velocity = Math.max((time - this.jumpStartTime) / 4, 15);
+            console.log(velocity)
+
+            if (velocity <= 100) {
+                this.gravitySpeed = Math.max(-velocity, -20);
+            }
             
             this.jumpStartTime = null;
         }
@@ -95,6 +98,5 @@ export class Player extends GravitatingGameObject {
      */
     die() {
         this.room.end();
-        this.sprite.animate = false;
     }
 }
