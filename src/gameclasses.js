@@ -120,7 +120,7 @@ export class GameBackground extends AbstractGameImage {
             let width = this.width;
             let height = this.height;
 
-            CTX.drawImage(this.image, this.x, y, width, height);
+            CTX.drawImage(this.image, x, y, width, height);
         }
     }
 }
