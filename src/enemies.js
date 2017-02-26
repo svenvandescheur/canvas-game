@@ -1,7 +1,8 @@
 import BEM from 'bem.js';
 import { CANVAS, CTX } from './canvas';
 import { GameSprite, GravitatingGameObject } from './gameclasses';
-import { Player} from './player';
+import { Player } from './player';
+import { PlatformBlock, PlatformBlockTop } from './platform';
 
 
 /** {HTMLImageElement} representing the falling block. */
@@ -15,6 +16,12 @@ const ASSET_ENEMY_EASY = BEM.getBEMNode('enemy', false, 'easy');
 
 /** {GameSprite} representing the the easy enemy. */
 const SPRITE_ENEMY_EASY = new GameSprite([ASSET_ENEMY_EASY]);
+
+/** {HTMLImageElement} representing the easy enemy. */
+const ASSET_ENEMY_MEDIUM = BEM.getBEMNode('enemy', false, 'medium');
+
+/** {GameSprite} representing the the easy enemy. */
+const SPRITE_ENEMY_MEDIUM = new GameSprite([ASSET_ENEMY_MEDIUM]);
 
 /** {HTMLImageElement} representing the pole. */
 const ASSET_POLE = BEM.getBEMNode('pole');
@@ -42,17 +49,16 @@ class Enemy extends GravitatingGameObject {
         super.update();
         
         let player = this.room.objects.find((object) => object.constructor.name === Player.name);
-        // let playerAtTL = player.isAtPosition(this.x - this.sprite.originX, this.y - this.sprite.originY);
-        // let playerAtTR = player.isAtPosition(this.x - this.sprite.originX + this.sprite.width, this.y - this.sprite.originY);
+        
+        if (!player) {
+            return;
+        }
+
         let playerAtBL = player.isAtPosition(this.x - this.sprite.originX, this.y - this.sprite.originY + this.sprite.height);
         let playerAtBR = player.isAtPosition(this.x - this.sprite.originX + this.sprite.width, this.y - this.sprite.originY + this.sprite.height);
 
         if (playerAtBL || playerAtBR) {
             player.die();  // So sorry...
-        }    
-
-        if (this.isOutsideRoom()) {
-            // Delete?
         }
     }
 }
@@ -80,12 +86,12 @@ class DelayedEnemy extends Enemy {
      */
     update() {
         let y = this.y;
-        super.update();
 
-        if (this.lifeTime < 60) {
+        if (this.lifeTime < 100) {
             this.y = y;
         } else {
             this.delayTimePassed = true;
+            super.update();
         }
 
         this.lifeTime++;
@@ -106,6 +112,21 @@ export class FallingBLock extends DelayedEnemy {
     constructor(gameRoom) {
         super(gameRoom, SPRITE_FALLING_BLOCK)
         this.lifeTime = 0;
+    }
+
+    /**
+     * Sets the sprite height of otheer to 0 of not a platform.
+     */
+    collisionBelow(other) {
+        if (
+            other.constructor.name !== PlatformBlock.name &&
+            other.constructor.name !== PlatformBlockTop.name &&
+            other.constructor.name !== this.constructor.name
+        ) {
+            other.speedH = 0;
+            other.y = other.y - other.sprite.originY + other.sprite.height;
+        } else {
+        }
     }
 }
 
@@ -132,7 +153,35 @@ export class EnemyEasy extends DelayedEnemy {
         super.update();
         
         if (this.delayTimePassed) {
-            this.speedH = -this.frictionSpeed + 1;
+            this.speedH = -3;
+        }
+    }
+}
+
+
+/**
+ * A simple falling block enemy.
+ * @class
+ */
+export class EnemyMedium extends DelayedEnemy {
+    /**
+     * Constructor method.
+     * @param {GameRoom} gameRoom
+     * @param {GameSprite} gameSprite
+     */
+    constructor(gameRoom) {
+        super(gameRoom, SPRITE_ENEMY_MEDIUM)
+    }
+
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
+    update() {
+        super.update();
+        
+        if (this.delayTimePassed) {
+            this.speedH = -5;
         }
     }
 }

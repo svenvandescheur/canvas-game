@@ -22,6 +22,7 @@ const SPRITE_PLAYER = new GameSprite([ASSET_PLAYER1, ASSET_PLAYER2, ASSET_PLAYER
 export class Player extends GravitatingGameObject {
     constructor(gameRoom) {
         super(gameRoom, SPRITE_PLAYER);
+        this.alive = true;
         this.jumpStartTime = null;
         this.moveX = null;
 
@@ -62,7 +63,6 @@ export class Player extends GravitatingGameObject {
 
         if (!this.isAirborne() && this.jumpStartTime) {
             let velocity = Math.max((time - this.jumpStartTime) / 4, 15);
-            console.log(velocity)
 
             if (velocity <= 100) {
                 this.gravitySpeed = Math.max(-velocity, -20);
@@ -74,9 +74,9 @@ export class Player extends GravitatingGameObject {
 
     update() {
         super.update();
-        this.sprite.skipFrames = 7 - Math.abs(this.speedH);
+        this.sprite.skipFrames = 10 - Math.abs(this.speedH);
 
-        if (!this.isAirborne()) {
+        if (!this.isAirborne() && this.alive) {
             let distance = this.moveX - this.x
             let distanceSpeed = distance / 30;
             this.speedH = -this.frictionSpeed + distanceSpeed;
@@ -97,6 +97,8 @@ export class Player extends GravitatingGameObject {
      * Trigger game over, player dies.
      */
     die() {
+        this.alive = false;
+        this.speedH = 0;
         this.room.end();
     }
 }

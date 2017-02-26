@@ -32,6 +32,7 @@ class AbstractPlatformObject extends GameObject {
         super(gameRoom, gameSprite)
         this.speedH = 0;
     }
+
     /**
      * Update the state of this object.
      * Gets fired by MainLoop.
@@ -57,6 +58,15 @@ export class PlatformBlock extends AbstractPlatformObject {
     constructor(gameRoom) {
         super(gameRoom, SPRITE_PLATFORM)
     }
+
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
+    update() {
+        super.update();
+        this.y = CANVAS.clientHeight - this.sprite.originY;
+    }
 }
 
 
@@ -71,5 +81,14 @@ export class PlatformBlockTop extends AbstractPlatformObject {
      */
     constructor(gameRoom) {
         super(gameRoom, SPRITE_PLATFORM_TOP)
+    }
+
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
+    update() {
+        super.update();
+        this.y = CANVAS.clientHeight - this.sprite.originY - SPRITE_PLATFORM.height;
     }
 }

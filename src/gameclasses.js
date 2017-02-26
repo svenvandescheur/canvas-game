@@ -88,6 +88,7 @@ export class GameBackground extends AbstractGameImage {
     constructor(images) {
         super(images);
         this.x = 0;
+        this.y = 0;
         this.speedH = 0;
     }
 
@@ -100,7 +101,7 @@ export class GameBackground extends AbstractGameImage {
         this.x += this.speedH;
 
         if(this.isOutsideRoomLeft()) {
-            this.x += CANVAS.clientWidth;
+            this.x += this.width;
         }
     }
 
@@ -109,12 +110,18 @@ export class GameBackground extends AbstractGameImage {
      * @returns {boolean}
      */
     isOutsideRoomLeft() {
-        return this.x + CANVAS.clientWidth < 0;
+        return this.x + this.width < 0;
     }
 
     draw() {
-        CTX.drawImage(this.image, this.x, 0, CANVAS.clientWidth, CANVAS.clientHeight);
-        CTX.drawImage(this.image, this.x + CANVAS.clientWidth, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+        for (let i=0; i+this.width < CANVAS.clientWidth; i++) {
+            let x = this.x + i * this.width;
+            let y = this.y;
+            let width = this.width;
+            let height = this.height;
+
+            CTX.drawImage(this.image, this.x, y, width, height);
+        }
     }
 }
 
@@ -144,6 +151,10 @@ export class GameObject {
      * Gets fired by MainLoop.
      */
     draw() {
+        if (this.isOutsideRoom()) {
+            return;
+        }
+
         CTX.drawImage(this.sprite.image,
             this.x - this.sprite.originX,
             this.y - this.sprite.originY,
@@ -165,7 +176,28 @@ export class GameObject {
         if (this.speedV) {
             this.y += this.speedV;
         };
+
+        this.checkCollisionBelow();
     };
+
+    /**
+     * Checks if there is a collision below.
+     */
+    checkCollisionBelow() {
+        let other = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + 1);
+        if (other) {
+            if (other.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + 1)) {
+                this.collisionBelow(other);
+            }
+        }
+    }
+
+    /**
+     * Logic to call when there is a collision below this object.
+     * @param {GameObject} other.
+     */
+    collisionBelow(other) {
+    }
 
     /**
      * Returns whether this object's bounding box is present at x, y coordinates.
@@ -213,6 +245,8 @@ export class GravitatingGameObject extends GameObject {
      */
     update() {
         super.update();
+        this.checkCollisionBelow();
+
         this.applyGravity();
         this.applyFriction();
         this.y += this.gravitySpeed;
@@ -227,6 +261,7 @@ export class GravitatingGameObject extends GameObject {
             }
         } else {
             this.frictionSpeed = 0;
+            // this.speedH--;
         }
     }
 
@@ -251,7 +286,7 @@ export class GravitatingGameObject extends GameObject {
      * Stops gravitating, snaps to the floor.
      */
     land() {
-        let object = this.room.findNearestGameObjectBelowPoint(this.x, this.y, this);
+        let object = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed, this);
         
         if (object) {
             let objectTop = object.y - object.sprite.originY;
@@ -268,6 +303,18 @@ export class GravitatingGameObject extends GameObject {
     isAirborne() {
         let objects = this.room.objects.filter((object) => object !== this);
         return !objects.find((object) => object.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed))
+    }
+
+    /**
+     * Checks if there is a collision below.
+     */
+    checkCollisionBelow() {
+        let other = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed);
+        if (other) {
+            if (other.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed)) {
+                this.collisionBelow(other);
+            }
+        }
     }
 }
 
