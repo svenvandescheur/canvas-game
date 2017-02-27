@@ -13,44 +13,53 @@ class AbstractGameImage {
      */
     constructor(images) {
         this.animate = true;
+        this.imageDimensions = [];
         this.image = null;
         this.images = images;
         this.imageIndex = 0;
         this.skipFrames = 3;
         this.skippedFrames = 0;
-        this.updateImage(true);
+
+        this.images.forEach((image) => {
+            let imageObject = new Image();
+            imageObject.onload = () => {
+                this.imageDimensions.push({ width: imageObject.width, height: imageObject.height });
+                this.width = imageObject.width;
+                this.height = imageObject.height;
+            }
+            imageObject.onerror = (e) => { console.error(e); }
+            imageObject.src = image.src;
+        });
+
+        this.updateImage(1, true);
     }
 
     /**
      * Update the state of this sprite.
      * Gets fired by MainLoop.
      */
-    update() {
-        this.updateImage();
+    update(delta) {
+        this.updateImage(delta);
     }
 
     /**
      * Loads the next image if time since last update > this.imageSpeed.
      * @param {boolean} [force=false]
      */
-    updateImage(force=false) {
+    updateImage(delta, force=false) {
         let date = new Date();
         let time = date.getTime();
 
         if ((this.animate && this.skippedFrames >= this.skipFrames) || force) {
             this.skippedFrames = 0;
-
             this.imageIndex = (this.imageIndex + 1 >= this.images.length) ? 0 : this.imageIndex + 1;
             this.image = this.images[this.imageIndex];
 
-            let img = new Image();
-
-            img.onload = () => {
-                this.width = img.width;
-                this.height = img.height;
+            let dimensions = this.imageDimensions[this.imageIndex];
+            if (dimensions) {
+                this.width = dimensions.width;
+                this.height = dimensions.height;
             }
-
-            img.src = this.images[this.imageIndex].src;
         } else {
             this.skippedFrames++;
         }
@@ -66,12 +75,10 @@ export class GameSprite extends AbstractGameImage {
      * Constructor method.
      * @param {Array} array of canvas image resources.
      */
-    constructor(images) {
-        super(images);
-        setTimeout(() => {
-            this.originX = this.width / 2;
-            this.originY = this.height / 2;
-        })
+    update(delta) {
+        super.update(delta);
+        this.originX = this.width / 2;
+        this.originY = this.height / 2;
     }
 }
 
@@ -96,12 +103,12 @@ export class GameBackground extends AbstractGameImage {
      * Update the state of this sprite.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
-        this.x += this.speedH;
+    update(delta) {
+        super.update(delta);
+        this.x += Math.round(this.speedH);
 
         if(this.isOutsideRoomLeft()) {
-            this.x += this.width;
+            this.x += Math.round(this.width);
         }
     }
 
@@ -115,12 +122,12 @@ export class GameBackground extends AbstractGameImage {
 
     draw() {
         for (let i=0; i+this.width < CANVAS.clientWidth; i++) {
-            let x = this.x + i * this.width;
-            let y = this.y;
-            let width = this.width;
-            let height = this.height;
+            let x = Math.round(this.x + i * this.width);
+            let y = Math.round(this.y);
+            let w = Math.round(this.width);
+            let h = Math.round(this.height);
 
-            CTX.drawImage(this.image, x, y, width, height);
+            CTX.drawImage(this.image, x, y, w, h);
         }
     }
 }
@@ -155,26 +162,27 @@ export class GameObject {
             return;
         }
 
-        CTX.drawImage(this.sprite.image,
-            this.x - this.sprite.originX,
-            this.y - this.sprite.originY,
-            this.sprite.width,
-            this.sprite.height)
+        let x = Math.round(this.x - this.sprite.originX);
+        let y = Math.round(this.y - this.sprite.originY);
+        let w = Math.round(this.sprite.width);
+        let h = Math.round(this.sprite.height);
+
+        CTX.drawImage(this.sprite.image, x, y, w, h);
     }
 
     /**
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        this.sprite.update();
+    update(delta) {
+        this.sprite.update(delta);
         
         if (this.speedH) {
-            this.x += this.speedH;
+            this.x += Math.round(this.speedH * delta);
         };
 
         if (this.speedV) {
-            this.y += this.speedV;
+            this.y += Math.round(this.speedV * delta);
         };
 
         this.checkCollisionBelow();
@@ -243,21 +251,21 @@ export class GravitatingGameObject extends GameObject {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
         this.checkCollisionBelow();
 
-        this.applyGravity();
-        this.applyFriction();
-        this.y += this.gravitySpeed;
-        this.x += this.frictionSpeed;
+        this.applyGravity(delta);
+        this.applyFriction(delta);
+        this.y += Math.round(this.gravitySpeed * delta);
+        this.x += Math.round(this.frictionSpeed * delta);
     }
 
-    applyFriction() {
+    applyFriction(delta) {
         if (!this.isAirborne()) {
             let floor = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height, this);
             if (floor) {
-                this.frictionSpeed = floor.speedH;
+                this.frictionSpeed = floor.frictionSpeed || floor.speedH;
             }
         } else {
             this.frictionSpeed = 0;
@@ -269,13 +277,13 @@ export class GravitatingGameObject extends GameObject {
      * Controls gravitation parameters.
      * Calls this.land() if not falling/bouncing.
      */
-    applyGravity() {
+    applyGravity(delta) {
         if (this.isAirborne()) {
             this.speedH = 0;
             this.gravitySpeed++;
         } else {
             if (this.gravitySpeed && Math.abs(this.gravitySpeed) < 3) {
-                this.land();            
+                this.land(delta);            
             } else {
                 this.gravitySpeed = this.gravitySpeed * -0.25;
             }
@@ -285,8 +293,9 @@ export class GravitatingGameObject extends GameObject {
     /**
      * Stops gravitating, snaps to the floor.
      */
-    land() {
-        let object = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed, this);
+    land(delta) {
+        let target = this.y - this.sprite.originY + this.sprite.height + 1 * delta;
+        let object = this.room.findNearestGameObjectBelowPoint(this.x, target, this);
         
         if (object) {
             let objectTop = object.y - object.sprite.originY;
@@ -302,16 +311,16 @@ export class GravitatingGameObject extends GameObject {
      */
     isAirborne() {
         let objects = this.room.objects.filter((object) => object !== this);
-        return !objects.find((object) => object.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed))
+        return !objects.find((object) => object.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + (this.gravitySpeed || 1)))
     }
 
     /**
      * Checks if there is a collision below.
      */
     checkCollisionBelow() {
-        let other = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed);
+        let other = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + 1);
         if (other) {
-            if (other.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + this.gravitySpeed)) {
+            if (other.isAtPosition(this.x, this.y - this.sprite.originY + this.sprite.height + 1)) {
                 this.collisionBelow(other);
             }
         }
@@ -333,7 +342,7 @@ export class GameRoom {
 
     draw() {}
 
-    update() {}
+    update(delta) {}
 
     findNearestGameObjectBelowPoint(x, y, notMe) {
         let objects = this.objects.filter((object) => object !== notMe);
@@ -346,6 +355,4 @@ export class GameRoom {
             }
         }
     }
-
-    end() {}
 }

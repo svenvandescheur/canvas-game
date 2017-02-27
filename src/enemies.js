@@ -17,11 +17,17 @@ const ASSET_ENEMY_EASY = BEM.getBEMNode('enemy', false, 'easy');
 /** {GameSprite} representing the the easy enemy. */
 const SPRITE_ENEMY_EASY = new GameSprite([ASSET_ENEMY_EASY]);
 
-/** {HTMLImageElement} representing the easy enemy. */
+/** {HTMLImageElement} representing the medium enemy. */
 const ASSET_ENEMY_MEDIUM = BEM.getBEMNode('enemy', false, 'medium');
 
-/** {GameSprite} representing the the easy enemy. */
+/** {GameSprite} representing the the medium enemy. */
 const SPRITE_ENEMY_MEDIUM = new GameSprite([ASSET_ENEMY_MEDIUM]);
+
+/** {HTMLImageElement} representing the hard enemy. */
+const ASSET_ENEMY_HARD = BEM.getBEMNode('enemy', false, 'hard');
+
+/** {GameSprite} representing the the hard enemy. */
+const SPRITE_ENEMY_HARD = new GameSprite([ASSET_ENEMY_HARD]);
 
 /** {HTMLImageElement} representing the pole. */
 const ASSET_POLE = BEM.getBEMNode('pole');
@@ -45,8 +51,8 @@ class Enemy extends GravitatingGameObject {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
         
         let player = this.room.objects.find((object) => object.constructor.name === Player.name);
         
@@ -84,14 +90,14 @@ class DelayedEnemy extends Enemy {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
+    update(delta) {
         let y = this.y;
 
         if (this.lifeTime < 100) {
             this.y = y;
         } else {
             this.delayTimePassed = true;
-            super.update();
+            super.update(delta);
         }
 
         this.lifeTime++;
@@ -118,13 +124,18 @@ export class FallingBLock extends DelayedEnemy {
      * Sets the sprite height of otheer to 0 of not a platform.
      */
     collisionBelow(other) {
+        if (other.constructor.name === Player.name) {
+            other.die();
+            return;
+        }
+
         if (
             other.constructor.name !== PlatformBlock.name &&
             other.constructor.name !== PlatformBlockTop.name &&
             other.constructor.name !== this.constructor.name
         ) {
             other.speedH = 0;
-            other.y = other.y - other.sprite.originY + other.sprite.height;
+            other.y = CANVAS.clientHeight * 2 // bye
         } else {
         }
     }
@@ -149,8 +160,8 @@ export class EnemyEasy extends DelayedEnemy {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
         
         if (this.delayTimePassed) {
             this.speedH = -3;
@@ -177,11 +188,39 @@ export class EnemyMedium extends DelayedEnemy {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
         
         if (this.delayTimePassed) {
             this.speedH = -5;
+        }
+    }
+}
+
+
+/**
+ * A simple falling block enemy.
+ * @class
+ */
+export class EnemyHard extends DelayedEnemy {
+    /**
+     * Constructor method.
+     * @param {GameRoom} gameRoom
+     * @param {GameSprite} gameSprite
+     */
+    constructor(gameRoom) {
+        super(gameRoom, SPRITE_ENEMY_HARD)
+    }
+
+    /**
+     * Update the state of this object.
+     * Gets fired by MainLoop.
+     */
+    update(delta) {
+        super.update(delta);
+        
+        if (this.delayTimePassed) {
+            this.speedH = -8;
         }
     }
 }
@@ -193,11 +232,11 @@ export class EnemyMedium extends DelayedEnemy {
  */
 export class PoleFactory {
     /**
-     * Constructor method.
+     * Creates a pole.
      * @param {GameRoom} gameRoom
      * @param {number} levels Amount of (non top) poles..
      */
-    constructor(gameRoom, levels, x, y) {
+    create(gameRoom, levels, x, y) {
         for (let i=0; i<levels; i++) {
             let pole = new Pole(gameRoom);
             pole.x = x;
@@ -220,8 +259,8 @@ class AbstractPole extends Enemy {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
         let object = this.room.findNearestGameObjectBelowPoint(this.x, this.y, this);
 
         if (!object ) {

@@ -62,7 +62,7 @@ export class Player extends GravitatingGameObject {
         let time = date.getTime();
 
         if (!this.isAirborne() && this.jumpStartTime) {
-            let velocity = Math.max((time - this.jumpStartTime) / 4, 15);
+            let velocity = Math.max((time - this.jumpStartTime) / 4, 20) * this.delta;
 
             if (velocity <= 100) {
                 this.gravitySpeed = Math.max(-velocity, -20);
@@ -72,8 +72,10 @@ export class Player extends GravitatingGameObject {
         }
     }
 
-    update() {
-        super.update();
+    update(delta) {
+        super.update(delta);
+        this.delta = delta;
+
         this.sprite.skipFrames = 10 - Math.abs(this.speedH);
 
         if (!this.isAirborne() && this.alive) {
@@ -85,7 +87,7 @@ export class Player extends GravitatingGameObject {
         if (this.x - this.sprite.originX <= 0) {
             this.speedH = Math.max(this.speedH, 0);
             this.frictionSpeed = 0;
-            this.x = this.sprite.originX;
+            this.x = this.sprite.originX * delta;
         }
 
         if (this.x - this.sprite.originX + this.sprite.width >= CANVAS.clientWidth) {

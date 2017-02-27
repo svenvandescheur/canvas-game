@@ -18,6 +18,41 @@ export const SPRITE_PLATFORM_TOP = new GameSprite([ASSET_PLATFORM_TOP]);
 /** {number} Amount of platform blocks to render ahead. */
 export const PLATORM_BUFFER = 1;
 
+
+/**
+ * Exposes a constructor creating Pole & PoleTop objects.
+ * @class
+ */
+export class PlatformFactory {
+    /**
+     * Creates a platform.
+     * @param {GameRoom} gameRoom
+     * @param {number} x.
+     * @param {number} y.
+     * @param {number} n.
+     */
+    create(gameRoom, x, y, n) {
+        for (let i=0; i<n; i++) {
+            let xx = SPRITE_PLATFORM.width * i + x;
+            console.log(x)
+
+            let platformBlockTop = new PlatformBlockTop(gameRoom);
+            platformBlockTop.x = xx;
+            platformBlockTop.y = y;
+
+            let platformBlock = new PlatformBlock(gameRoom);
+            platformBlock.x = xx;
+            platformBlock.y = y + platformBlockTop.sprite.height;
+            
+            
+            gameRoom.objects.push(platformBlockTop);
+            gameRoom.objects.push(platformBlock);
+        }
+    }
+}
+
+
+
 /**
  * Base class for platform object.
  * @abstract
@@ -37,8 +72,8 @@ class AbstractPlatformObject extends GameObject {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
-        super.update();        
+    update(delta) {
+        super.update(delta);        
         if (this.isOutsideRoom()) {
             this.x += CANVAS.clientWidth + PLATORM_BUFFER * this.sprite.width;
         }
@@ -56,16 +91,7 @@ export class PlatformBlock extends AbstractPlatformObject {
      * @param {GameRoom} gameRoom
      */
     constructor(gameRoom) {
-        super(gameRoom, SPRITE_PLATFORM)
-    }
-
-    /**
-     * Update the state of this object.
-     * Gets fired by MainLoop.
-     */
-    update() {
-        super.update();
-        this.y = CANVAS.clientHeight - this.sprite.originY;
+        super(gameRoom, SPRITE_PLATFORM);
     }
 }
 
@@ -81,14 +107,5 @@ export class PlatformBlockTop extends AbstractPlatformObject {
      */
     constructor(gameRoom) {
         super(gameRoom, SPRITE_PLATFORM_TOP)
-    }
-
-    /**
-     * Update the state of this object.
-     * Gets fired by MainLoop.
-     */
-    update() {
-        super.update();
-        this.y = CANVAS.clientHeight - this.sprite.originY - SPRITE_PLATFORM.height;
     }
 }

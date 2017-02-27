@@ -48,7 +48,7 @@ function main() {
             adjustCanvasSize();
             window.addEventListener('resize', adjustCanvasSize);
             window.addEventListener('orientationchange', adjustCanvasSize);
-            setTimeout(() => { new Level(); });
+            new Level();
         })
         .catch((e) => {
             console.error(e);

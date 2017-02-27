@@ -1,9 +1,9 @@
 import BEM from 'bem.js';
 import MainLoop from 'mainloop.js';
 import { CANVAS, CTX } from './canvas';
-import { FallingBLock, EnemyEasy, EnemyMedium, PoleFactory } from './enemies';
+import { FallingBLock, EnemyEasy, EnemyMedium, EnemyHard, PoleFactory } from './enemies';
 import { GameSprite, GameBackground, GameRoom } from './gameclasses';
-import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformBlock, PlatformBlockTop } from './platform';
+import { SPRITE_PLATFORM, SPRITE_PLATFORM_TOP, PLATORM_BUFFER, PlatformFactory, PlatformBlock, PlatformBlockTop } from './platform';
 import { Player } from './player';
 
 
@@ -20,10 +20,19 @@ const ASSET_BACKGROUND_GRAY = BEM.getBEMNode('background', false, 'gray');
 const BACKGROUND_BLUE = new GameBackground([ASSET_BACKGROUND_BLUE]);
 
 /** {GameSprite} representing the green background. */
-const BACKGROUND_GREEN = new GameBackground([ASSET_BACKGROUND_CLOUD]);
+const BACKGROUND_CLOUD = new GameBackground([ASSET_BACKGROUND_CLOUD]);
 
 /** {GameSprite} representing the gray background. */
 const BACKGROUND_GRAY = new GameBackground([ASSET_BACKGROUND_GRAY]);
+
+/** {string} render quality. */
+const GFX_MODE_LOW_DETAIL = 'low detail';
+
+/** {string} render quality. */
+const GFX_MODE_HIGH_DETAIL = 'high detail';
+
+/** {number} Frame rate boundary (low datail below). */
+const GFX_MIN_FFAME_RATE = 30;
 
 /** {number} maximum (negative) speed. */
 const MAX_SPEEDH = -30;
@@ -40,9 +49,13 @@ export class Level extends GameRoom {
     constructor() {
         super();
         this.background1 = BACKGROUND_BLUE;
-        this.background2 = BACKGROUND_GREEN;
+        this.background2 = BACKGROUND_CLOUD;
+        this.interval = 200;
+        this.gfxMode = GFX_MODE_LOW_DETAIL;
         this.level = 1;
         this.objects = [];
+        this.platformFactory = new PlatformFactory();
+        this.poleFactory = new PoleFactory()
         this.score = 0;
         this.speedH = -5;
         this.screenMessage1 = null;
@@ -50,29 +63,30 @@ export class Level extends GameRoom {
         clearTimeout(this.screenMessage2Timeout)
 
         this.setSpeedH(-5);
-        this.createInitialObjects();
         this.createFloor();
-
+        this.createInitialObjects();
     }
 
     /**
      * Draws everything in this room.
      */
     draw() {
-        this.background1.y = CANVAS.clientHeight - SPRITE_PLATFORM.height / 2 - SPRITE_PLATFORM_TOP.height / 2 - this.background1.height;
+        CTX.clearRect(0, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+
+        if (this.gfxMode === GFX_MODE_HIGH_DETAIL) {
+            let grd=CTX.createLinearGradient(0, 100, 0, 0);
+            grd.addColorStop(0,"rgb(217, 246, 249)");
+            grd.addColorStop(1,"white");
+
+            CTX.fillStyle=grd;
+            CTX.rect(0, 0, CANVAS.clientWidth, CANVAS.clientHeight);
+            CTX.fill();
+        }
+
         this.background2.y = 0;
-
-
-        let grd=CTX.createLinearGradient(0, 100, 0, 0);
-        grd.addColorStop(0,"rgb(217, 246, 249)");
-        grd.addColorStop(1,"white");
-
-        CTX.fillStyle=grd;
-        CTX.rect(0, 0, CANVAS.clientWidth, CANVAS.clientHeight);
-        CTX.fill();
-
         this.background2.draw();
-        this.background1.draw();
+        this.background1.y = CANVAS.clientHeight - SPRITE_PLATFORM.height / 2 - SPRITE_PLATFORM_TOP.height / 2 - this.background1.height;
+        this.background1.draw();        
         this.objects.forEach((object) => object.draw());
         this.drawHud();
     }
@@ -81,19 +95,27 @@ export class Level extends GameRoom {
      * Update the state of this object.
      * Gets fired by MainLoop.
      */
-    update() {
+    update(delta) {
+        delta = Math.round(delta);
+        super.update(delta);
+        delta = delta / 20;
+
         if (this.screenMessage1) {
             return;
         }
 
         this.screenMessage2 = null;        
         this.level = Math.ceil(this.score / 1000);
-        this.score++;
-        this.objects.forEach((object) => object.update());
-        this.background1.update();
-        this.background2.update();
+        this.score = Math.round(this.score + delta);
+        this.objects.forEach((object) => object.update(delta));
+        this.background1.update(delta);
+        this.background2.update(delta);
         this.removeObjectsOutsideRoom();
-        this.updateEnemies(this.score);
+        this.updateEnemies(delta);
+
+        if (MainLoop.getFPS() < GFX_MIN_FFAME_RATE) {
+            this.gfxMode = GFX_MODE_LOW_DETAIL;
+        }
     }
 
     /**
@@ -101,26 +123,12 @@ export class Level extends GameRoom {
      */
     createFloor() {
         let h = SPRITE_PLATFORM.height;
-        let y = CANVAS.clientHeight - SPRITE_PLATFORM.originY;
-        let y2 = y - SPRITE_PLATFORM_TOP.height;
-        this.createPlatform(PlatformBlock, 0, y, CANVAS.width / SPRITE_PLATFORM.width + PLATORM_BUFFER);
-        this.createPlatform(PlatformBlockTop, 0, y2, CANVAS.width / SPRITE_PLATFORM_TOP.width + PLATORM_BUFFER);
-    }
+        let y = CANVAS.clientHeight - SPRITE_PLATFORM.width / 2 - SPRITE_PLATFORM_TOP.height;
+        let n = CANVAS.width / SPRITE_PLATFORM_TOP.width + PLATORM_BUFFER;
 
-    /**
-     * Creates a platform.
-     * @param {class} gameObjectClass.
-     * @param {number} x X position to start placing objects.
-     * @param {number} y Y position to place objects.
-     * @param {number} n Amount of objects.
-     */
-    createPlatform(gameObjectClass, x, y, n) {
-        for (let i=0; i<n; i++) {
-            let gameObject = new gameObjectClass(this);
-            gameObject.x = i * gameObject.sprite.width + x;
-            gameObject.y = y;
-            gameObject.speedH = this.speedH;
-            this.objects.push(gameObject);
+        for (let i=0; i<n/4; i++) {
+            let x = i * SPRITE_PLATFORM.width * 4;
+            this.platformFactory.create(this, x, y, n / 4);
         }
     }
 
@@ -129,6 +137,8 @@ export class Level extends GameRoom {
      */
     createInitialObjects() {
         this.createObject(Player, 70, CANVAS.height - SPAWN_OFFSET);
+        this.updateEnemies(1, true);
+
     }
 
     /**
@@ -145,58 +155,87 @@ export class Level extends GameRoom {
      * Removes objects with y > room height.
      */
     removeObjectsOutsideRoom() {
-        this.objects = this.objects.filter((object) => {
+        this.objects = this.objects.filter((object, index) => {
             if (object.y < CANVAS.clientHeight) {
                 return true;
             }
-            object = null;
         });
     }
 
     /**
-     * Adds enemeis (if needed)
+     * Adds enemeis (if needed).
+     * @param {number} delta.
+     * @param {boolean} force.
      */
-    updateEnemies() {
-        let interval = 200;
+    updateEnemies(delta, force=false) {
         let rand = Math.random();
 
         // return;
-        if (this.score % interval !== 0) {
+        if (this.score % this.interval !== 0 && force===false) {
             return;
         }
 
-        this.level = Math.min(this.level, 4)
-        this.setSpeedH(Math.max(this.speedH - 0.1, MAX_SPEEDH));
+        // this.interval -= 10;
+        // this.interval = Math.max(150, this.interval);
 
+        this.level = Math.min(this.level, 4)
+        this.setSpeedH(Math.max(this.score / -300 - 5, MAX_SPEEDH));
 
         switch(this.level) {
-            case 4:
-                if (rand > 0.50) {
-                    if (rand > 0.5) { this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET); }
-                    else { 
+            case 5:
+                if (rand > 0.75) {
+                    rand = Math.random();
+
+                    if (rand > 0.5) {
                         if (rand > 0.75) {
-                            this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+                            this.createObject(EnemyMedium, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
                         } else {
-                            this.createObject(EnemyMedium, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+                            this.createObject(EnemyHard, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
                         }
+                    } else {
+                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
                     }
                 }
-                new PoleFactory(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+                else {
+                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+                } 
+                break;
+            case 4:
+                if (rand > 0.75) {
+                    rand = Math.random();
+
+                    if (rand > 0.5) {
+                        if (rand > 0.75) {
+                            this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
+                        } else {
+                            this.createObject(EnemyMedium, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
+                        }
+                    } else {
+                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+                    }
+                }
+                else {
+                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+                } 
                 break;
             case 3:
-                if (rand > 0.50) {
-                    if (rand > 0.75) { this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET); }
-                    else { 
-                        this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+                if (rand > 0.75) {
+                    rand = Math.random();
+
+                    if (rand > 0.5) {
+                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+                    } else {
+                        this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
                     }
+                } else {
+                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
                 }
-                new PoleFactory(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
                 break;
             case 2:
-                new PoleFactory(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+                this.poleFactory.create(this, Math.floor(Math.random() * 2) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
                 break;
             default:
-                new PoleFactory(this, 1, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+                this.poleFactory.create(this, 0, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
                 break;
         }
     }
@@ -208,7 +247,7 @@ export class Level extends GameRoom {
     setSpeedH(value) {
         this.speedH = value;
         this.background1.speedH = this.speedH / 4;
-        this.background2.speedH = this.speedH / 20;
+        this.background2.speedH = this.speedH / 12;
 
         let objects = this.objects.forEach((object) => {
             if (object.constructor.name === PlatformBlock.name ||
@@ -273,6 +312,11 @@ export class Level extends GameRoom {
         clearTimeout(this.screenMessage2Timeout);
 
         if (this.screenMessage1) {
+            this.objects.forEach((object) => {
+                object.y = CANVAS.clientHeight * 2;
+                object = null;
+            });
+
             this.constructor();
         }
     }

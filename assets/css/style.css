@@ -19,6 +19,8 @@ html, body {
 }
 
 .canvas {
+    -webkit-transform: translate3d(0,0,0);
+    background: rgb(217, 246, 249);
     position: absolute;
     bottom: 0;
 }
