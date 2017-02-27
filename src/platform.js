@@ -34,7 +34,6 @@ export class PlatformFactory {
     create(gameRoom, x, y, n) {
         for (let i=0; i<n; i++) {
             let xx = SPRITE_PLATFORM.width * i + x;
-            console.log(x)
 
             let platformBlockTop = new PlatformBlockTop(gameRoom);
             platformBlockTop.x = xx;
