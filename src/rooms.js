@@ -37,8 +37,13 @@ const GFX_MIN_FFAME_RATE = 30;
 /** {number} maximum (negative) speed. */
 const MAX_SPEEDH = -30;
 
+/** {number} minimum divider for game speed */
+const MIN_GAME_SPEED_INTERVAL = 5;
+
+
 /** {number} Offset in pixels (from bottom of canvas) where objects are spawned. */
 const SPAWN_OFFSET = 320;
+
 
 
 /**
@@ -50,8 +55,13 @@ export class Level extends GameRoom {
         super();
         this.background1 = BACKGROUND_BLUE;
         this.background2 = BACKGROUND_CLOUD;
-        this.interval = 200;
+        this.gameSpeedInterval = 20;
         this.gfxMode = GFX_MODE_LOW_DETAIL;
+        this.lastSpawn1 = 0;
+        this.lastSpawn2 = 0;
+        this.lastSpawn3 = 0;
+        this.lastSpawn4 = 0;
+        this.lastSpawn5 = 0;        
         this.level = 1;
         this.objects = [];
         this.platformFactory = new PlatformFactory();
@@ -97,8 +107,8 @@ export class Level extends GameRoom {
      */
     update(delta) {
         delta = Math.round(delta);
+        delta = delta / Math.max(this.gameSpeedInterval, MIN_GAME_SPEED_INTERVAL);
         super.update(delta);
-        delta = delta / 20;
 
         if (this.screenMessage1) {
             return;
@@ -106,7 +116,7 @@ export class Level extends GameRoom {
 
         this.screenMessage2 = null;        
         this.level = Math.ceil(this.score / 1000);
-        this.score = Math.round(this.score + delta);
+        this.score = Math.round(this.score + -this.speedH * delta);
         this.objects.forEach((object) => object.update(delta));
         this.background1.update(delta);
         this.background2.update(delta);
@@ -168,76 +178,62 @@ export class Level extends GameRoom {
      * @param {boolean} force.
      */
     updateEnemies(delta, force=false) {
+        this.setSpeedH(-5);
         let rand = Math.random();
 
-        // return;
-        if (this.score % this.interval !== 0 && force===false) {
-            return;
+        if (this.score - this.lastSpawn1 > 1000 || force) {
+            this.updateEnemies1(delta);
+            this.lastSpawn1 = this.score;
+
+        }
+        
+        if (this.score - this.lastSpawn2 > 2100 ) {
+            this.updateEnemies2(delta);
+            this.lastSpawn2 = this.score;
+        }
+        
+        if (this.score - this.lastSpawn3 > 3300 ) {
+            this.updateEnemies3(delta);
+            this.lastSpawn3 = this.score;
+        }
+        
+        if (this.score - this.lastSpawn4 > 4400 ) {
+            this.updateEnemies4(delta);
+            this.lastSpawn4 = this.score;
+        }
+        
+        if (this.score - this.lastSpawn5 > 5500 ) {
+            this.updateEnemies5(delta);
+            this.lastSpawn5 = this.score;
+            this.gameSpeedInterval--;
         }
 
-        // this.interval -= 10;
-        // this.interval = Math.max(150, this.interval);
+    }
 
-        this.level = Math.min(this.level, 4)
-        this.setSpeedH(Math.max(this.score / -300 - 5, MAX_SPEEDH));
-
-        switch(this.level) {
-            case 5:
-                if (rand > 0.75) {
-                    rand = Math.random();
-
-                    if (rand > 0.5) {
-                        if (rand > 0.75) {
-                            this.createObject(EnemyMedium, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
-                        } else {
-                            this.createObject(EnemyHard, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
-                        }
-                    } else {
-                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
-                    }
-                }
-                else {
-                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
-                } 
-                break;
-            case 4:
-                if (rand > 0.75) {
-                    rand = Math.random();
-
-                    if (rand > 0.5) {
-                        if (rand > 0.75) {
-                            this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
-                        } else {
-                            this.createObject(EnemyMedium, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
-                        }
-                    } else {
-                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
-                    }
-                }
-                else {
-                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
-                } 
-                break;
-            case 3:
-                if (rand > 0.75) {
-                    rand = Math.random();
-
-                    if (rand > 0.5) {
-                        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
-                    } else {
-                        this.createObject(EnemyEasy, Math.random() * CANVAS.clientWidth / 2 + CANVAS.clientHeight / 2, CANVAS.height - SPAWN_OFFSET);
-                    }
-                } else {
-                    this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
-                }
-                break;
-            case 2:
-                this.poleFactory.create(this, Math.floor(Math.random() * 2) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
-                break;
-            default:
-                this.poleFactory.create(this, 0, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
-                break;
+    updateEnemies1(delta) {
+        // Create pole
+        if (this.score <= 500) {
+            this.poleFactory.create(this, 0, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+        } else {
+            this.poleFactory.create(this, Math.floor(Math.random() * 3) , CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
         }
+    
+    }
+    updateEnemies2(delta) {
+        this.createObject(FallingBLock, Math.random() * CANVAS.clientWidth, CANVAS.height - SPAWN_OFFSET);
+    }
+
+    updateEnemies3(delta) {
+        this.createObject(EnemyEasy, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+        this.gameSpeedInterval--;
+    }
+
+    updateEnemies4(delta) {
+        this.createObject(EnemyMedium, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
+    }
+
+    updateEnemies5(delta) {
+        this.createObject(EnemyHard, CANVAS.clientWidth - 50, CANVAS.height - SPAWN_OFFSET);
     }
 
     /**
@@ -271,11 +267,11 @@ export class Level extends GameRoom {
         CTX.fillText(`L${this.level}`, 10, fontSize + 10);
         CTX.strokeText(`L${this.level}`, 10, fontSize + 10);
 
-        CTX.fillText(`S${-this.speedH.toFixed(1)}`, 160, fontSize + 10);
-        CTX.strokeText(`S${-this.speedH.toFixed(2)}`, 160, fontSize + 10);
+        // CTX.fillText(`S${-this.speedH.toFixed(1)}`, 160, fontSize + 10);
+        // CTX.strokeText(`S${-this.speedH.toFixed(2)}`, 160, fontSize + 10);
 
-        CTX.fillText(`FPS${parseInt(MainLoop.getFPS())}`, 310, fontSize + 10);
-        CTX.strokeText(`FPS${parseInt(MainLoop.getFPS())}`, 310, fontSize + 10);
+        // CTX.fillText(`FPS${parseInt(MainLoop.getFPS())}`, 310, fontSize + 10);
+        // CTX.strokeText(`FPS${parseInt(MainLoop.getFPS())}`, 310, fontSize + 10);
 
         CTX.textAlign='end';
         CTX.fillText(`${this.score}`, Math.min(window.innerWidth, CANVAS.clientWidth) - 10, fontSize + 10);
@@ -296,11 +292,11 @@ export class Level extends GameRoom {
 
     /**
      * Stops the room.
-     * TODO: Score's, menu's 'n stuff...
      */
     end() {
         this.setSpeedH(0);
-        this.screenMessage1 = 'Game over';
+        let isHighScore = this.isHighScore();
+        this.screenMessage1 = (isHighScore) ? `High score: ${this.score}` : 'Game over';
         this.screenMessage2Timeout = setTimeout(() => {
             this.screenMessage2 = "Tap to restart"
             CANVAS.addEventListener('click', this.restart.bind(this));
@@ -308,6 +304,48 @@ export class Level extends GameRoom {
         }, 600)
     }
 
+    /**
+     * Check i( score is a new high score.
+     * Sets highscore if so.
+     * @returns {boolean}
+     */
+    isHighScore() {
+        if (this.score > this.getHighScore()) {
+            return this.setHighScore();
+        }
+        return false;
+    }
+
+    /**
+     * Returns the high score.
+     * @returns {number}
+     */
+    getHighScore() {
+        let score = 0;
+        try {
+            score = localStorage.getItem('highscore');
+        } catch(e) {
+            return score;
+        }
+        return score;
+    }
+
+    /**
+     * Sets the current score as high score.
+     * @returns {number|false} New high score if succesfull, false otherwise.
+     */
+    setHighScore() {
+        try {
+            localStorage.setItem('highscore', this.score);
+            return this.score;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    /**
+     * Restarts this room.
+     */
     restart() {
         clearTimeout(this.screenMessage2Timeout);
 

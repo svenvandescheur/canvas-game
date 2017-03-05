@@ -72,8 +72,8 @@ class AbstractGameImage {
  */
 export class GameSprite extends AbstractGameImage {
     /**
-     * Constructor method.
-     * @param {Array} array of canvas image resources.
+     * Update the state of this sprite.
+     * Gets fired by MainLoop.
      */
     update(delta) {
         super.update(delta);
@@ -120,6 +120,10 @@ export class GameBackground extends AbstractGameImage {
         return this.x + this.width < 0;
     }
 
+    /**
+     * Draws the sprite of this object on CTX.
+     * Gets fired by MainLoop.
+     */
     draw() {
         for (let i=0; i+this.width < CANVAS.clientWidth; i++) {
             let x = Math.round(this.x + i * this.width);
@@ -190,6 +194,7 @@ export class GameObject {
 
     /**
      * Checks if there is a collision below.
+     * Fires this.collisionBelow() is fo.
      */
     checkCollisionBelow() {
         let other = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height + 1);
@@ -261,6 +266,9 @@ export class GravitatingGameObject extends GameObject {
         this.x += Math.round(this.frictionSpeed * delta);
     }
 
+    /**
+     * Controls friction parameters.
+     */
     applyFriction(delta) {
         if (!this.isAirborne()) {
             let floor = this.room.findNearestGameObjectBelowPoint(this.x, this.y - this.sprite.originY + this.sprite.height, this);
@@ -269,7 +277,6 @@ export class GravitatingGameObject extends GameObject {
             }
         } else {
             this.frictionSpeed = 0;
-            // this.speedH--;
         }
     }
 
@@ -279,8 +286,8 @@ export class GravitatingGameObject extends GameObject {
      */
     applyGravity(delta) {
         if (this.isAirborne()) {
-            this.speedH = 0;
-            this.gravitySpeed++;
+            // this.speedH = 0;
+            this.gravitySpeed += 1.5 * delta;
         } else {
             if (this.gravitySpeed && Math.abs(this.gravitySpeed) < 3) {
                 this.land(delta);            
@@ -332,6 +339,9 @@ export class GravitatingGameObject extends GameObject {
  * @abstract
  */
 export class GameRoom {
+    /**
+     * Constructor method.
+     */
     constructor() {
         this.objects = [];
 

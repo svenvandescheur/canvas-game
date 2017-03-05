@@ -62,10 +62,11 @@ export class Player extends GravitatingGameObject {
         let time = date.getTime();
 
         if (!this.isAirborne() && this.jumpStartTime) {
-            let velocity = Math.max((time - this.jumpStartTime) / 4, 20) * this.delta;
+            let velocity = Math.min((time - this.jumpStartTime) / 4, 27)
 
-            if (velocity <= 100) {
-                this.gravitySpeed = Math.max(-velocity, -20);
+            if (time - this.jumpStartTime <= 500) {
+                this.gravitySpeed = -velocity;
+                this.speedH = this.speedH /2
             }
             
             this.jumpStartTime = null;
